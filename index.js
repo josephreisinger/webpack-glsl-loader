@@ -3,6 +3,9 @@
 var fs = require("fs");
 var path = require("path");
 
+// Prevent multi-import
+var importList = [];
+
 function parse(loader, source, context, cb) {
   var imports = [];
   var importPattern = /#include "([.\/\w_-]+)"/gi;
@@ -43,8 +46,12 @@ function processImports(loader, source, context, imports, cb) {
           return cb(err);
         }
 
-        source = source.replace(imp.target, bld);
-        processImports(loader, source, context, imports, cb);
+        if (!importList.includes(resolved)) {
+          importList.push(resolved);
+
+          source = source.replace(imp.target, bld);
+          processImports(loader, source, context, imports, cb);
+        }
       });
     });
   });
