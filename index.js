@@ -4,9 +4,9 @@ var fs = require("fs");
 var path = require("path");
 
 // Prevent multi-import
-var importList = [];
+// var importList = [];
 
-function parse(loader, source, context, cb) {
+function parse(loader, source, context, importList, cb) {
   var imports = [];
   var importPattern = /#include "([.\/\w_-]+)"/gi;
   var match = importPattern.exec(source);
@@ -20,10 +20,10 @@ function parse(loader, source, context, cb) {
     match = importPattern.exec(source);
   }
 
-  processImports(loader, source, context, imports, cb);
+  processImports(loader, source, context, imports, importList, cb);
 }
 
-function processImports(loader, source, context, imports, cb) {
+function processImports(loader, source, context, imports, importList, cb) {
   if (imports.length === 0) {
     return cb(null, source);
   }
@@ -39,7 +39,7 @@ function processImports(loader, source, context, imports, cb) {
 
     if (importList.includes(resolved)) {
       source = source.replace(imp.target, "\n");
-      processImports(loader, source, context, imports, cb);
+      processImports(loader, source, context, imports, importList, cb);
     } else {
       importList.push(resolved);
 
@@ -48,14 +48,20 @@ function processImports(loader, source, context, imports, cb) {
           return cb(err);
         }
 
-        parse(loader, src, path.dirname(resolved), function (err, bld) {
-          if (err) {
-            return cb(err);
-          }
+        parse(
+          loader,
+          src,
+          path.dirname(resolved),
+          importList,
+          function (err, bld) {
+            if (err) {
+              return cb(err);
+            }
 
-          source = source.replace(imp.target, bld);
-          processImports(loader, source, context, imports, cb);
-        });
+            source = source.replace(imp.target, bld);
+            processImports(loader, source, context, imports, importList, cb);
+          }
+        );
       });
     }
   });
@@ -64,7 +70,7 @@ function processImports(loader, source, context, imports, cb) {
 module.exports = function (source) {
   this.cacheable();
   var cb = this.async();
-  parse(this, source, this.context, function (err, bld) {
+  parse(this, source, this.context, [], function (err, bld) {
     if (err) {
       return cb(err);
     }
