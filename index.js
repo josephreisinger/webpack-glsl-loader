@@ -36,24 +36,27 @@ function processImports(loader, source, context, imports, cb) {
     }
 
     loader.addDependency(resolved);
-    fs.readFile(resolved, "utf-8", function (err, src) {
-      if (err) {
-        return cb(err);
-      }
 
-      parse(loader, src, path.dirname(resolved), function (err, bld) {
+    if (importList.includes(resolved)) {
+      source = source.replace(imp.target, "\n");
+    } else {
+      importList.push(resolved);
+
+      fs.readFile(resolved, "utf-8", function (err, src) {
         if (err) {
           return cb(err);
         }
 
-        if (!importList.includes(resolved)) {
-          importList.push(resolved);
+        parse(loader, src, path.dirname(resolved), function (err, bld) {
+          if (err) {
+            return cb(err);
+          }
 
           source = source.replace(imp.target, bld);
           processImports(loader, source, context, imports, cb);
-        }
+        });
       });
-    });
+    }
   });
 }
 
