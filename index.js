@@ -58,6 +58,6 @@ module.exports = function (source) {
       return cb(err);
     }
 
-    cb(null, "module.exports = " + JSON.stringify(bld));
+    cb(null, "module.exports = " + JSON.stringify({ code: bld }));
   });
 };
