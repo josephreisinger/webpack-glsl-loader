@@ -39,6 +39,7 @@ function processImports(loader, source, context, imports, cb) {
 
     if (importList.includes(resolved)) {
       source = source.replace(imp.target, "\n");
+      return cb(null, source);
     } else {
       importList.push(resolved);
 
