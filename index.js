@@ -30,41 +30,45 @@ function processImports(loader, source, context, imports, importList, cb) {
 
   var imp = imports.pop();
 
-  loader.resolve(context, "./" + imp.key, function (err, resolved) {
-    if (err) {
-      return cb(err);
-    }
+  loader.resolve(
+    context,
+    imp.key.startsWith(".") ? imp.key : "./" + imp.key,
+    function (err, resolved) {
+      if (err) {
+        return cb(err);
+      }
 
-    loader.addDependency(resolved);
+      loader.addDependency(resolved);
 
-    if (importList.includes(resolved)) {
-      source = source.replace(imp.target, "\n");
-      processImports(loader, source, context, imports, importList, cb);
-    } else {
-      importList.push(resolved);
+      if (importList.includes(resolved)) {
+        source = source.replace(imp.target, "\n");
+        processImports(loader, source, context, imports, importList, cb);
+      } else {
+        importList.push(resolved);
 
-      fs.readFile(resolved, "utf-8", function (err, src) {
-        if (err) {
-          return cb(err);
-        }
-
-        parse(
-          loader,
-          src,
-          path.dirname(resolved),
-          importList,
-          function (err, bld) {
-            if (err) {
-              return cb(err);
-            }
-
-            source = source.replace(imp.target, bld);
-            processImports(loader, source, context, imports, importList, cb);
+        fs.readFile(resolved, "utf-8", function (err, src) {
+          if (err) {
+            return cb(err);
           }
-        );
-      });
+
+          parse(
+            loader,
+            src,
+            path.dirname(resolved),
+            importList,
+            function (err, bld) {
+              if (err) {
+                return cb(err);
+              }
+
+              source = source.replace(imp.target, bld);
+              processImports(loader, source, context, imports, importList, cb);
+            }
+          );
+        });
+      }
     }
-  });
+  );
 }
 
 module.exports = function (source) {
